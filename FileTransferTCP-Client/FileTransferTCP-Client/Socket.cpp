@@ -1,9 +1,5 @@
 #include "Socket.h"
 
-Socket::Socket() {
-	this->clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-}
-
 int Socket::connect(PCWSTR serverIp, int port) {
 	// Initialize Winsock
 	WSADATA wsaData;
@@ -12,8 +8,9 @@ int Socket::connect(PCWSTR serverIp, int port) {
 		std::cerr << "WSAStartup failed" << std::endl;
 		return 1;
 	}
-	// Client configuration
 
+	// Client configuration
+	this->clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->clientSocket == INVALID_SOCKET)
 	{
 		std::cerr << "Error creating socket: " << WSAGetLastError() << std::endl;
@@ -33,6 +30,8 @@ int Socket::connect(PCWSTR serverIp, int port) {
 		this->disconnect();
 		return 1;
 	}
+
+	return 0;
 }
 
 void Socket::disconnect() {
@@ -41,15 +40,15 @@ void Socket::disconnect() {
 	WSACleanup();
 }
 
-void Socket::send(uint8_t* d, int size) {
+void Socket::send(const char* buffer, int len) {
 	// Send data to the server
 	const char* message = "Hello, server! How are you?";
 	_WINSOCK2API_::send(this->clientSocket, message, (int)strlen(message), 0);
 
 	// Receive the response from the server
-	char buffer[1024];
-	memset(buffer, 0, 1024);
-	int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+	char rbuffer[1024];
+	memset(rbuffer, 0, 1024);
+	int bytesReceived = recv(this->clientSocket, rbuffer, sizeof(buffer), 0);
 	if (bytesReceived > 0)
 	{
 		std::cout << "Received from server: " << buffer << std::endl;
