@@ -6,7 +6,7 @@ int Socket::connect(PCWSTR serverIp, int port) {
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
 		std::cerr << "WSAStartup failed" << std::endl;
-		return 1;
+		return -1;
 	}
 
 	// Client configuration
@@ -15,7 +15,7 @@ int Socket::connect(PCWSTR serverIp, int port) {
 	{
 		std::cerr << "Error creating socket: " << WSAGetLastError() << std::endl;
 		WSACleanup();
-		return 1;
+		return -1;
 	}
 
 	sockaddr_in serverAddr{};
@@ -28,28 +28,32 @@ int Socket::connect(PCWSTR serverIp, int port) {
 	{
 		std::cerr << "Connect failed with error: " << WSAGetLastError() << std::endl;
 		this->disconnect();
-		return 1;
+		return -1;
 	}
 
 	return 0;
 }
 
-void Socket::disconnect() {
+int Socket::disconnect() {
 	// Clean up
 	closesocket(this->clientSocket);
 	WSACleanup();
+	return 0;
 }
 
-void Socket::send(const char* buffer) {
+int Socket::send(const char* buffer) {
 	// Send data to the server
 	_WINSOCK2API_::send(this->clientSocket, buffer, (int)strlen(buffer), 0);
 
 	// Receive the response from the server
 	char rbuffer[1024];
 	memset(rbuffer, 0, 1024);
-	int bytesReceived = recv(this->clientSocket, rbuffer, sizeof(buffer), 0);
-	if (bytesReceived > 0)
-	{
-		std::cout << "Received from server: " << buffer << std::endl;
+	int bytesReceived = recv(this->clientSocket, rbuffer, sizeof(rbuffer), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
+		return -1;
 	}
+
+	std::cout << "Received from server: " << rbuffer << std::endl;
+	return 0;
 }

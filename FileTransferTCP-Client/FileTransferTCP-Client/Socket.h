@@ -7,14 +7,14 @@
 
 class ISocket {
 	virtual int connect(PCWSTR IP, int port) = 0;
-	virtual void disconnect() = 0;
-	virtual void send(const char* buffer) = 0;
+	virtual int disconnect() = 0;
+	virtual int send(const char* buffer) = 0;
 };
 
 class Socket: public ISocket {
 	SOCKET clientSocket;
 public:
 	int connect(PCWSTR IP, int port) override;
-	void disconnect() override;
-	void send(const char* buffer) override;
+	int disconnect() override;
+	int send(const char* buffer) override;
 };
