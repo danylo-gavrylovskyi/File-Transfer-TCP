@@ -8,7 +8,7 @@
 class ISocket {
 	virtual int connect(PCWSTR IP, int port) = 0;
 	virtual void disconnect() = 0;
-	virtual void send(const char* buffer, int len) = 0;
+	virtual void send(const char* buffer) = 0;
 };
 
 class Socket: public ISocket {
@@ -16,5 +16,5 @@ class Socket: public ISocket {
 public:
 	int connect(PCWSTR IP, int port) override;
 	void disconnect() override;
-	void send(const char* buffer, int len) override; //uint8_t* d, int size
+	void send(const char* buffer) override;
 };

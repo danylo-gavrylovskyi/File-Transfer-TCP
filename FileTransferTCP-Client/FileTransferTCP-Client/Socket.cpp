@@ -40,10 +40,9 @@ void Socket::disconnect() {
 	WSACleanup();
 }
 
-void Socket::send(const char* buffer, int len) {
+void Socket::send(const char* buffer) {
 	// Send data to the server
-	const char* message = "Hello, server! How are you?";
-	_WINSOCK2API_::send(this->clientSocket, message, (int)strlen(message), 0);
+	_WINSOCK2API_::send(this->clientSocket, buffer, (int)strlen(buffer), 0);
 
 	// Receive the response from the server
 	char rbuffer[1024];

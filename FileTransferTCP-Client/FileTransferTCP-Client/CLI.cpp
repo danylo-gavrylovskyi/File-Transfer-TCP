@@ -37,11 +37,12 @@ void CLI::run(Socket clientSocket)
 			long size = ftell(file);
 			fseek(file, 0, SEEK_SET);
 
-			char* buffer = new char[size];
+			char* buffer = new char[size + 1];
 			fread(buffer, size, 1, file);
+			buffer[size] = '\0';
 
 			fclose(file);
-			clientSocket.send(buffer, size);
+			clientSocket.send(buffer);
 			delete[] buffer;
 
 			break;
