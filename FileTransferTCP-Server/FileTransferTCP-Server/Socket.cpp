@@ -1,5 +1,7 @@
 #include "Socket.h"
 
+Socket::Socket(){}
+
 int Socket::acceptConnection(int port) {
 	// Initialize Winsock
 	WSADATA wsaData;
@@ -59,16 +61,43 @@ void Socket::close() {
 	WSACleanup();
 }
 
-void Socket::receiveData() { //uint8_t* d, int size
+void Socket::receiveData() {
 	// Receive data from the client
+	char filename[255];
+	memset(filename, 0, 255);
+	int bytesReceived = recv(this->clientSocket, filename, sizeof(filename), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		send(this->clientSocket, "Operation failed.", (int)strlen("Operation failed."), 0);
+		std::cerr << "Error in receiving filename." << std::endl;
+		return;
+	}
+	// Send a response back to the client
+	const char* response = "Filename received successfully.";
+	send(this->clientSocket, response, (int)strlen(response), 0);
+
 	char buffer[1024];
 	memset(buffer, 0, 1024);
-	int bytesReceived = recv(this->clientSocket, buffer, sizeof(buffer), 0);
-	if (bytesReceived > 0)
-	{
-		std::cout << "Received data: " << buffer << std::endl;
-		// Send a response back to the client
-		const char* response = "Hello, client! This is the server.";
-		send(this->clientSocket, response, (int)strlen(response), 0);
+	int bytesReceived2 = recv(this->clientSocket, buffer, sizeof(buffer), 0);
+	if (bytesReceived2 == SOCKET_ERROR || bytesReceived2 == 0) {
+		send(this->clientSocket, "Operation failed.", (int)strlen("Operation failed."), 0);
+		std::cerr << "Error in receiving data." << std::endl;
+		return;
 	}
+
+	std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+	std::ofstream outfile(move(pathToFile));
+	outfile << buffer << std::endl;
+	outfile.close();
+
+	// Send a response back to the client
+	response = "File was uploaded successfully.";
+	send(this->clientSocket, response, (int)strlen(response), 0);
+}
+
+const SOCKET& Socket::getServerSocket() const {
+	return this->serverSocket;
+}
+
+const SOCKET& Socket::getClientSocket() const {
+	return this->clientSocket;
 }
