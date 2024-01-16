@@ -6,6 +6,8 @@
 #include <WinSock2.h>
 
 class ISocket {
+public:
+	virtual ~ISocket() {}
 	virtual int acceptConnection(int port) = 0;
 	virtual void close() = 0;
 	virtual void receiveData() = 0;

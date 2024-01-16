@@ -3,6 +3,8 @@
 #include "Socket.h"
 
 class IServer {
+public:
+	virtual ~IServer(){}
 	virtual void start(Socket& mainSocket, const int port) = 0;
 };
 
