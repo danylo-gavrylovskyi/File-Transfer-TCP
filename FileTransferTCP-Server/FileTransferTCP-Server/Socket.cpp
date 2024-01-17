@@ -92,9 +92,39 @@ const char* Socket::receiveChunkedData() const {
 	}
 
 	assembledData[totalReceived] = '\0';
-	std::cout << "Assembled data on the server: " << assembledData << std::endl;
 
 	return assembledData;
+}
+
+int Socket::sendChunkedData(const char* data, int chunkSize) const {
+	int dataSize = strlen(data);
+
+	// Send total size first
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&dataSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send total size." << std::endl;
+		return -1;
+	}
+
+	if (send(clientSocket, reinterpret_cast<const char*>(&chunkSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send chunk size." << std::endl;
+		return -1;
+	}
+
+	int totalSent = 0;
+
+	while (totalSent < dataSize) {
+		int remaining = dataSize - totalSent;
+		int currentChunkSize = (remaining < chunkSize) ? remaining : chunkSize;
+
+		if (send(this->clientSocket, data + totalSent, currentChunkSize, 0) == SOCKET_ERROR) {
+			std::cerr << "Failed to send chunked data." << std::endl;
+			break;
+		}
+
+		totalSent += currentChunkSize;
+	}
+
+	return 0;
 }
 
 int Socket::sendResponse(const char* text) const {

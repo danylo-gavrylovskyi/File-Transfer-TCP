@@ -2,7 +2,16 @@
 
 CLI::CLI(){}
 
-void CLI::run(Socket& clientSocket)
+enum CLI::Commands {
+	EXIT,
+	GET,
+	LIST,
+	PUT,
+	DELETE_FILE,
+	INFO
+};
+
+void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 {
 	while (true) {
 		int cmd;
@@ -15,17 +24,21 @@ void CLI::run(Socket& clientSocket)
 
 		clientSocket.sendIntData(cmd);
 
-		if (cmd == 0) break;
+		if (cmd == EXIT) break;
 
 		switch (cmd)
 		{
-		case 1: {
+		case GET: {
+			std::string filename;
+			std::cout << "Enter filename to get from the server: ";
+			std::cin >> filename;
+			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 			break;
 		}
-		case 2: {
+		case LIST: {
 			break;
 		}
-		case 3: {
+		case PUT: {
 			std::string pathToFile;
 			std::cout << "Enter path to file: ";
 			std::cin >> pathToFile;
@@ -35,22 +48,7 @@ void CLI::run(Socket& clientSocket)
 			std::cin >> filename;
 			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 
-			FILE* file = fopen(move(pathToFile).c_str(), "rb");
-			if (!file)
-			{
-				std::cerr << "Error while reading the file\n";
-				break;
-			}
-
-			fseek(file, 0, SEEK_END);
-			long size = ftell(file);
-			fseek(file, 0, SEEK_SET);
-
-			char* buffer = new char[size + 1];
-			fread(buffer, size, 1, file);
-			buffer[size] = '\0';
-
-			fclose(file);
+			char* buffer = fileHandler.getFileContent(move(pathToFile));
 			clientSocket.sendChunkedData(buffer, 10);
 			delete[] buffer;
 
@@ -58,10 +56,10 @@ void CLI::run(Socket& clientSocket)
 
 			break;
 		}
-		case 4: {
+		case DELETE_FILE: {
 			break;
 		}
-		case 5: {
+		case INFO: {
 			break;
 		}
 		default:

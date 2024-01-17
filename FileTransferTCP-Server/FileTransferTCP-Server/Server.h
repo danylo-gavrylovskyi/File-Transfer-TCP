@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Socket.h"
+#include "FileHandler.h"
 
 class IServer {
 public:
 	virtual ~IServer(){}
-	virtual void start(Socket& mainSocket, const int port) = 0;
+	virtual void start(Socket& mainSocket, const int port, const FileHandler& fileHandler) = 0;
 };
 
 class Server: public IServer {
@@ -15,5 +16,5 @@ public:
 	Server(const Server&) = delete;
 	Server(Server&&) = delete;
 
-	void start(Socket& mainSocket, const int port) override;
+	void start(Socket& mainSocket, const int port, const FileHandler& fileHandler) override;
 };

@@ -11,7 +11,7 @@ enum Server::Commands {
 	INFO
 };
 
-void Server::start(Socket& mainSocket, const int port)
+void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHandler)
 {
 	mainSocket.acceptConnection(port);
 
@@ -31,6 +31,15 @@ void Server::start(Socket& mainSocket, const int port)
 		switch (cmd)
 		{
 		case GET: {
+			const char* filename = mainSocket.receiveChunkedData();
+
+			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			char* buffer = fileHandler.getFileContent(move(pathToFile));
+
+			mainSocket.sendChunkedData(buffer, 10);
+
+			delete[] buffer;
+			delete[] filename;
 			break;
 		}
 		case LIST: {
@@ -41,9 +50,7 @@ void Server::start(Socket& mainSocket, const int port)
 			const char* buffer = mainSocket.receiveChunkedData();
 
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
-			std::ofstream outfile(move(pathToFile));
-			outfile << buffer << std::endl;
-			outfile.close();
+			fileHandler.createFile(buffer, move(pathToFile));
 
 			mainSocket.sendResponse("File was uploaded successfully.");
 			std::cout << "File '" << filename << "' was created" << std::endl;
