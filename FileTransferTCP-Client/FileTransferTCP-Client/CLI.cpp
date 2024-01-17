@@ -32,10 +32,33 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to get from the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+			clientSocket.sendChunkedData(filename.c_str(), 2);
+
+			std::string pathToFolder;
+			std::cout << "Enter path to folder where you want to save requested file: ";
+			std::cin >> pathToFolder;
+
+			std::string pathToFile = move(pathToFolder) + "/" + move(filename);
+
+			const char* requestedFile = clientSocket.receiveChunkedData();
+			fileHandler.createFile(requestedFile, move(pathToFile));
+
+			delete[] requestedFile;
 			break;
 		}
 		case LIST: {
+			const char* listOfFiles = clientSocket.receiveChunkedData();
+
+			std::cout << "Final: " << listOfFiles << '\n';
+			
+			std::cout << "List of files available on the server:" << std::endl;
+			for (char i = 0; i < strlen(listOfFiles); i++)
+			{
+				if (listOfFiles[i] == ' ') std::cout << std::endl;
+				else std::cout << listOfFiles[i];
+			}
+
+			delete[] listOfFiles;
 			break;
 		}
 		case PUT: {
@@ -52,7 +75,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			clientSocket.sendChunkedData(buffer, 10);
 			delete[] buffer;
 
-			std::cout << clientSocket.receiveResponseFromServer() << std::endl;
+			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;
 
 			break;
 		}

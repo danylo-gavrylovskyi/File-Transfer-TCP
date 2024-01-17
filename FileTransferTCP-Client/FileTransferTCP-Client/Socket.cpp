@@ -83,7 +83,41 @@ int Socket::sendChunkedData(const char* data, int chunkSize) const {
 	return 0;
 }
 
-const char* Socket::receiveResponseFromServer() const {
+const char* Socket::receiveChunkedData() const {
+	int totalSize = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
+	}
+
+	int chunkSize = 0;
+	bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving chunk size." << std::endl;
+	}
+
+	char* assembledData = new char[totalSize + 1];
+	int totalReceived = 0;
+
+	while (totalReceived < totalSize) {
+		char* buffer = new char[chunkSize];
+		int bytesReceived = recv(this->clientSocket, buffer, sizeof(buffer), 0);
+
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cerr << "Error in receiving chunked data." << std::endl;
+			break;
+		}
+
+		memcpy(assembledData + totalReceived, buffer, bytesReceived);
+		totalReceived += bytesReceived;
+	}
+
+	assembledData[totalReceived] = '\0';
+
+	return assembledData;
+}
+
+const char* Socket::receiveConfirmationFromServer() const {
 	int size = 0;
 	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&size), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {

@@ -43,6 +43,27 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			break;
 		}
 		case LIST: {
+			std::vector<char*> splittedPath = {};
+			std::string listOfFiles = "";
+			std::string pathToFolder = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage";
+			for (const auto& entry : std::filesystem::directory_iterator(pathToFolder)) {
+				std::filesystem::path outfilename = entry.path();
+				std::string outfilename_str = outfilename.string();
+				char* filename = outfilename_str.data();
+
+				char* p = strtok(filename, "\\");
+				while (p != NULL) {
+					p = strtok(NULL, "\\");
+					splittedPath.push_back(p);
+				}
+
+				listOfFiles += splittedPath[splittedPath.size() - 2] + std::string("");
+
+				splittedPath.clear();
+			}
+
+			mainSocket.sendChunkedData(move(listOfFiles).c_str(), 10);
+
 			break;
 		}
 		case PUT: {

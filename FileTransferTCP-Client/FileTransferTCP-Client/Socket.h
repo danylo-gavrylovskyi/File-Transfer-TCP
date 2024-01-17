@@ -12,7 +12,8 @@ public:
 	virtual int disconnect() = 0;
 	virtual int sendChunkedData(const char* data, int chunkSize) const = 0;
 	virtual int sendIntData(int num) const = 0;
-	virtual const char* receiveResponseFromServer() const = 0;
+	virtual const char* receiveChunkedData() const = 0;
+	virtual const char* receiveConfirmationFromServer() const = 0;
 };
 
 class Socket: public ISocket {
@@ -26,7 +27,8 @@ public:
 	int disconnect() override;
 	int sendChunkedData(const char* data, int chunkSize) const;
 	int sendIntData(int num) const;
-	const char* receiveResponseFromServer() const override;
+	const char* receiveChunkedData() const override;
+	const char* receiveConfirmationFromServer() const override;
 
 	const SOCKET& getClientSocket() const;
 };
