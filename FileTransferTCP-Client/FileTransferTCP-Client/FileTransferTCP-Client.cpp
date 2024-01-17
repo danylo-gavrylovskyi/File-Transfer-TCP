@@ -15,7 +15,7 @@ int main()
 
 	CLI cli;
 
-	Socket clientSocket{};
+	Socket clientSocket;
 	clientSocket.connect(serverIp, port);
 	cli.run(clientSocket);
 	clientSocket.disconnect();

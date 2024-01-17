@@ -17,15 +17,12 @@ void Server::start(Socket& mainSocket, const int port)
 
 	while (true)
 	{
-		char cmdChar[1];
-		int bytesReceived = recv(mainSocket.getClientSocket(), cmdChar, sizeof(cmdChar), 0);
+		int cmd = 0;
+		int bytesReceived = recv(mainSocket.getClientSocket(), reinterpret_cast<char*>(&cmd), sizeof(int), 0);
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-			send(mainSocket.getClientSocket(), "Operation failed.", (int)strlen("Operation failed."), 0);
-			std::cerr << "Error in receiving filename." << std::endl;
+			std::cerr << "Error in receiving command number." << std::endl;
 			return;
 		}
-
-		int cmd = cmdChar[0] - '0';
 
 		if (cmd == EXIT) {
 			break;
@@ -40,6 +37,19 @@ void Server::start(Socket& mainSocket, const int port)
 			break;
 		}
 		case PUT: {
+			const char* filename = mainSocket.receiveChunkedData();
+			const char* buffer = mainSocket.receiveChunkedData();
+
+			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			std::ofstream outfile(move(pathToFile));
+			outfile << buffer << std::endl;
+			outfile.close();
+
+			mainSocket.sendResponse("File was uploaded successfully.");
+			std::cout << "File '" << filename << "' was created" << std::endl;
+
+			delete[] buffer;
+			delete[] filename;
 			break;
 		}
 		case DELETE_FILE: {
@@ -53,5 +63,5 @@ void Server::start(Socket& mainSocket, const int port)
 		}
 	}
 
-	mainSocket.close();
+	mainSocket.closeConnection();
 }

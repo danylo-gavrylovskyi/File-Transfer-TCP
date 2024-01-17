@@ -1,5 +1,7 @@
 #include "Socket.h"
 
+Socket::Socket(){}
+
 int Socket::connect(PCWSTR serverIp, int port) {
 	// Initialize Winsock
 	WSADATA wsaData;
@@ -41,19 +43,64 @@ int Socket::disconnect() {
 	return 0;
 }
 
-int Socket::send(const char* buffer) {
-	// Send data to the server
-	_WINSOCK2API_::send(this->clientSocket, buffer, (int)strlen(buffer), 0);
-
-	// Receive the response from the server
-	char rbuffer[1024];
-	memset(rbuffer, 0, 1024);
-	int bytesReceived = recv(this->clientSocket, rbuffer, sizeof(rbuffer), 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving total size." << std::endl;
+int Socket::sendIntData(int num) const {
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&num), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send int data." << std::endl;
 		return -1;
 	}
 
-	std::cout << "Received from server: " << rbuffer << std::endl;
 	return 0;
+}
+
+int Socket::sendChunkedData(const char* data, int chunkSize) const {
+	int dataSize = strlen(data);
+
+	// Send total size first
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&dataSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send total size." << std::endl;
+		return -1;
+	}
+
+	if (send(clientSocket, reinterpret_cast<const char*>(&chunkSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send chunk size." << std::endl;
+		return -1;
+	}
+
+	int totalSent = 0;
+
+	while (totalSent < dataSize) {
+		int remaining = dataSize - totalSent;
+		int currentChunkSize = (remaining < chunkSize) ? remaining : chunkSize;
+
+		if (send(this->clientSocket, data + totalSent, currentChunkSize, 0) == SOCKET_ERROR) {
+			std::cerr << "Failed to send chunked data." << std::endl;
+			break;
+		}
+
+		totalSent += currentChunkSize;
+	}
+
+	return 0;
+}
+
+const char* Socket::receiveResponseFromServer() const {
+	int size = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&size), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
+	}
+
+	char* buffer = new char[size + 1];
+	memset(buffer, 0, size);
+	bytesReceived = recv(this->clientSocket, buffer, size, 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving message from server." << std::endl;
+	}
+	buffer[size] = '\0';
+
+	return buffer;
+}
+
+const SOCKET& Socket::getClientSocket() const {
+	return this->clientSocket;
 }

@@ -9,8 +9,9 @@ class ISocket {
 public:
 	virtual ~ISocket() {}
 	virtual int acceptConnection(int port) = 0;
-	virtual void close() = 0;
-	virtual void receiveData() = 0;
+	virtual int closeConnection() = 0;
+	virtual const char* receiveChunkedData() const = 0;
+	virtual int sendResponse(const char* text) const = 0;
 };
 
 class Socket: public ISocket {
@@ -22,8 +23,9 @@ public:
 	Socket(Socket&&) = delete;
 
 	int acceptConnection(int port) override;
-	void close() override;
-	void receiveData() override;
+	int closeConnection() override;
+	const char* receiveChunkedData() const override;
+	int sendResponse(const char* text) const override;
 
 	const SOCKET& getServerSocket() const;
 	const SOCKET& getClientSocket() const;

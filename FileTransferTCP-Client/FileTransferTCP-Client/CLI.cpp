@@ -1,6 +1,8 @@
 #include "CLI.h"
 
-void CLI::run(Socket clientSocket)
+CLI::CLI(){}
+
+void CLI::run(Socket& clientSocket)
 {
 	while (true) {
 		int cmd;
@@ -10,6 +12,8 @@ void CLI::run(Socket clientSocket)
 		std::cout << "4. DELETE <filename>: Request the server to delete a specific file.\n\t";
 		std::cout << "5. INFO <filename>: Retrieve information about a specific file from the server.\n\t>> ";
 		std::cin >> cmd;
+
+		clientSocket.sendIntData(cmd);
 
 		if (cmd == 0) break;
 
@@ -22,14 +26,19 @@ void CLI::run(Socket clientSocket)
 			break;
 		}
 		case 3: {
-			char pathToFile[255];
-			std::cout << "Enter filename: ";
+			std::string pathToFile;
+			std::cout << "Enter path to file: ";
 			std::cin >> pathToFile;
 
-			FILE* file = fopen(pathToFile, "rb");
+			std::string filename;
+			std::cout << "Enter filename to be created on the server: ";
+			std::cin >> filename;
+			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+
+			FILE* file = fopen(move(pathToFile).c_str(), "rb");
 			if (!file)
 			{
-				std::cout << "Error while reading the file\n";
+				std::cerr << "Error while reading the file\n";
 				break;
 			}
 
@@ -42,8 +51,10 @@ void CLI::run(Socket clientSocket)
 			buffer[size] = '\0';
 
 			fclose(file);
-			clientSocket.send(buffer);
+			clientSocket.sendChunkedData(buffer, 10);
 			delete[] buffer;
+
+			std::cout << clientSocket.receiveResponseFromServer() << std::endl;
 
 			break;
 		}

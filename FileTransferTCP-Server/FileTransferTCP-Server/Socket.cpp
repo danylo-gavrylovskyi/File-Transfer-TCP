@@ -8,7 +8,7 @@ int Socket::acceptConnection(int port) {
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
 		std::cerr << "WSAStartup failed" << std::endl;
-		return 1;
+		return -1;
 	}
 
 	// Server configuration
@@ -17,7 +17,7 @@ int Socket::acceptConnection(int port) {
 	{
 		std::cerr << "Error creating socket: " << WSAGetLastError() << std::endl;
 		WSACleanup();
-		return 1;
+		return -1;
 	}
 	sockaddr_in serverAddr{};
 	serverAddr.sin_family = AF_INET;
@@ -28,16 +28,16 @@ int Socket::acceptConnection(int port) {
 	if (bind(this->serverSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR)
 	{
 		std::cerr << "Bind failed with error: " << WSAGetLastError() << std::endl;
-		this->close();
-		return 1;
+		this->closeConnection();
+		return -1;
 	}
 
 	// Listen for incoming connections
 	if (listen(this->serverSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		std::cerr << "Listen failed with error: " << WSAGetLastError() << std::endl;
-		this->close();
-		return 1;
+		this->closeConnection();
+		return -1;
 	}
 
 	std::cout << "Server listening on port " << port << std::endl;
@@ -47,51 +47,69 @@ int Socket::acceptConnection(int port) {
 	if (clientSocket == INVALID_SOCKET)
 	{
 		std::cerr << "Accept failed with error: " << WSAGetLastError() << std::endl;
-		this->close();
-		return 1;
+		this->closeConnection();
+		return -1;
 	}
 
 	return 0;
 }
 
-void Socket::close() {
+int Socket::closeConnection() {
 	// Clean up
 	closesocket(this->clientSocket);
 	closesocket(this->serverSocket);
 	WSACleanup();
+	return 0;
 }
 
-void Socket::receiveData() {
-	// Receive data from the client
-	char filename[255];
-	memset(filename, 0, 255);
-	int bytesReceived = recv(this->clientSocket, filename, sizeof(filename), 0);
+const char* Socket::receiveChunkedData() const {
+	int totalSize = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		send(this->clientSocket, "Operation failed.", (int)strlen("Operation failed."), 0);
-		std::cerr << "Error in receiving filename." << std::endl;
-		return;
-	}
-	// Send a response back to the client
-	const char* response = "Filename received successfully.";
-	send(this->clientSocket, response, (int)strlen(response), 0);
-
-	char buffer[1024];
-	memset(buffer, 0, 1024);
-	int bytesReceived2 = recv(this->clientSocket, buffer, sizeof(buffer), 0);
-	if (bytesReceived2 == SOCKET_ERROR || bytesReceived2 == 0) {
-		send(this->clientSocket, "Operation failed.", (int)strlen("Operation failed."), 0);
-		std::cerr << "Error in receiving data." << std::endl;
-		return;
+		std::cerr << "Error in receiving total size." << std::endl;
 	}
 
-	std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
-	std::ofstream outfile(move(pathToFile));
-	outfile << buffer << std::endl;
-	outfile.close();
+	int chunkSize = 0;
+	bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving chunk size." << std::endl;
+	}
 
-	// Send a response back to the client
-	response = "File was uploaded successfully.";
-	send(this->clientSocket, response, (int)strlen(response), 0);
+	char* assembledData = new char[totalSize + 1];
+	int totalReceived = 0;
+
+	while (totalReceived < totalSize) {
+		char* buffer = new char[chunkSize];
+		int bytesReceived = recv(this->clientSocket, buffer, sizeof(buffer), 0);
+
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cerr << "Error in receiving chunked data." << std::endl;
+			break;
+		}
+
+		memcpy(assembledData + totalReceived, buffer, bytesReceived);
+		totalReceived += bytesReceived;
+	}
+
+	assembledData[totalReceived] = '\0';
+	std::cout << "Assembled data on the server: " << assembledData << std::endl;
+
+	return assembledData;
+}
+
+int Socket::sendResponse(const char* text) const {
+	int textSize = strlen(text);
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&textSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send total size." << std::endl;
+		return -1;
+	}
+
+	if (send(this->clientSocket, text, (int)strlen(text), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send response to client." << std::endl;
+		return -1;
+	}
+
+	return 0;
 }
 
 const SOCKET& Socket::getServerSocket() const {
