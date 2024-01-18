@@ -69,6 +69,6 @@ class CLI:
 
                 print("Size       : " + splitted_file_info[0] + " bytes\n")
                 print("Created    : " + splitted_file_info[1])
-                print("Modified   : " + splittedFileInfo[2])
+                print("Modified   : " + splitted_file_info[2])
 
                 break
