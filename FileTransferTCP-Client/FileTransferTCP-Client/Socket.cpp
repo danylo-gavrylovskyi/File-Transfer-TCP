@@ -83,7 +83,7 @@ int Socket::sendChunkedData(const char* data, int chunkSize) const {
 	return 0;
 }
 
-const char* Socket::receiveChunkedData() const {
+char* Socket::receiveChunkedData() const {
 	int totalSize = 0;
 	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {

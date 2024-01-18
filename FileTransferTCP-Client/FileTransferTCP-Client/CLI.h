@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <vector>
+
 #include "Socket.h"
 #include "FileHandler.h"
 

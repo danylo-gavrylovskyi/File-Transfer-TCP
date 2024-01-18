@@ -89,6 +89,25 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			break;
 		}
 		case INFO: {
+			std::string filename;
+			std::cout << "Enter filename to get info about from the server: ";
+			std::cin >> filename;
+			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+
+			char* fileInfo = clientSocket.receiveChunkedData();
+			std::vector<char*> splittedFileInfo = {};
+
+			char* p = strtok(fileInfo, ";");
+			while (p != NULL) {
+				splittedFileInfo.push_back(p);
+				p = strtok(NULL, ";");
+			}
+
+			std::cout << "Size       : " << splittedFileInfo[0] << " bytes" << std::endl;
+			std::cout << "Created    : " << splittedFileInfo[1];
+			std::cout << "Modified   : " << splittedFileInfo[2];
+
+			delete[] fileInfo;
 			break;
 		}
 		default:

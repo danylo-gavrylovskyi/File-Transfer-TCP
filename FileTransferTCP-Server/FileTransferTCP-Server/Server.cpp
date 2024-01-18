@@ -93,9 +93,18 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 				mainSocket.sendResponse("Error when deleting file from the server storage.");
 			}
 
+			delete[] filename;
 			break;
 		}
 		case INFO: {
+			const char* filename = mainSocket.receiveChunkedData();
+			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+
+			char* fileInfo = fileHandler.getFileInfo(move(pathToFile));
+			mainSocket.sendChunkedData(fileInfo, 10);
+
+			delete[] fileInfo;
+			delete[] filename;
 			break;
 		}
 		default:
