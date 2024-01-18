@@ -49,14 +49,13 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 		case LIST: {
 			const char* listOfFiles = clientSocket.receiveChunkedData();
 
-			std::cout << "Final: " << listOfFiles << '\n';
-			
 			std::cout << "List of files available on the server:" << std::endl;
 			for (char i = 0; i < strlen(listOfFiles); i++)
 			{
 				if (listOfFiles[i] == ' ') std::cout << std::endl;
 				else std::cout << listOfFiles[i];
 			}
+			std::cout << std::endl;
 
 			delete[] listOfFiles;
 			break;
@@ -80,6 +79,13 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			break;
 		}
 		case DELETE_FILE: {
+			std::string filename;
+			std::cout << "Enter filename to delete from the server: ";
+			std::cin >> filename;
+			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+
+			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;
+
 			break;
 		}
 		case INFO: {

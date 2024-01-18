@@ -45,8 +45,8 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 		case LIST: {
 			std::vector<char*> splittedPath = {};
 			std::string listOfFiles = "";
-			std::string pathToFolder = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage";
-			for (const auto& entry : std::filesystem::directory_iterator(pathToFolder)) {
+			const std::string PATH_TO_FOLDER = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage";
+			for (const auto& entry : std::filesystem::directory_iterator(PATH_TO_FOLDER)) {
 				std::filesystem::path outfilename = entry.path();
 				std::string outfilename_str = outfilename.string();
 				char* filename = outfilename_str.data();
@@ -81,6 +81,18 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			break;
 		}
 		case DELETE_FILE: {
+			const char* filename = mainSocket.receiveChunkedData();
+
+			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			if (fileHandler.deleteFile(move(pathToFile)) == 0) {
+				std::cout << "File '" << filename << "' was deleted from the server storage." << std::endl;
+				mainSocket.sendResponse("File was successfully deleted from the server storage.");
+			}
+			else {
+				std::cout << "Error occured while deleting '" << filename << "' from the server storage." << std::endl;
+				mainSocket.sendResponse("Error when deleting file from the server storage.");
+			}
+
 			break;
 		}
 		case INFO: {
