@@ -11,7 +11,7 @@ class FileHandler:
             print(f"Error while reading the file: {e}")
             return None
 
-    def create_file(buffer, path_to_file) -> int:
+    def create_file(self, buffer, path_to_file) -> int:
         try:
             with open(path_to_file, 'w') as file:
                 file.write(buffer)

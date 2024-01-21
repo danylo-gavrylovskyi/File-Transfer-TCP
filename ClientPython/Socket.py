@@ -24,6 +24,7 @@ class Socket:
         total_sent = 0
 
         while total_sent < total_size:
+            print(total_sent, total_size)
             current_chunk_size = min(chunk_size, total_size - total_sent)
             chunk_data = data[total_sent:total_sent + current_chunk_size]
             self.client_socket.send(chunk_data)
@@ -32,12 +33,13 @@ class Socket:
         return 0
     
     def receive_chunked_data(self):
-        total_size: int = struct.unpack("!i", self.client_socket.recv(4))[0]
-        chunk_size: int = struct.unpack("!i", self.client_socket.recv(4))[0]
+        total_size: int = struct.unpack("<I", self.client_socket.recv(4))[0]
+        chunk_size: int = struct.unpack("<I", self.client_socket.recv(4))[0]
+        print(total_size, chunk_size)
 
         assembled_data = bytearray()
 
-        total_received = 0
+        total_received: int = 0
         while total_received < total_size:
             buffer = self.client_socket.recv(chunk_size)
             if not buffer:
