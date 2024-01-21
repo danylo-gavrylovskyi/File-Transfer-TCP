@@ -1,9 +1,9 @@
 class FileHandler:
-    def get_file_content(path_to_file):
+    def get_file_content(self, path_to_file):
         try:
             with open(path_to_file, 'rb') as file:
                 buffer = file.read()
-            return buffer.decode('utf-8')
+            return buffer
         except FileNotFoundError:
             print("Error while reading the file: File not found.")
             return None

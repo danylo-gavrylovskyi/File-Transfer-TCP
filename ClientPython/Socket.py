@@ -18,8 +18,8 @@ class Socket:
     def send_chunked_data(self, data, chunk_size) -> int:
         total_size = len(data)
 
-        self.client_socket.send(struct.pack('<I', chunk_size))
         self.client_socket.send(struct.pack('<I', total_size))
+        self.client_socket.send(struct.pack('<I', chunk_size))
         
         total_sent = 0
 
@@ -47,14 +47,15 @@ class Socket:
             assembled_data.extend(buffer)
             total_received += len(buffer)
 
-        return assembled_data.decode('utf-8')
+        return bytes(assembled_data)
     
     def receive_confirmation_from_server(self):
-        total_size: int = struct.unpack("!i", self.client_socket.recv(4))[0]
+        total_size: int = struct.unpack("<I", self.client_socket.recv(4))[0]
 
         buffer = self.client_socket.recv(total_size)
         if not buffer:
             print("Error in receiving message from server.")
             return None
+        
 
         return buffer.decode('utf-8')
