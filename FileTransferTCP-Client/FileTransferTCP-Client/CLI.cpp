@@ -43,6 +43,8 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			const char* requestedFile = clientSocket.receiveChunkedData();
 			fileHandler.createFile(requestedFile, move(pathToFile));
 
+			std::cout << "File " << filename << " was created.";
+
 			delete[] requestedFile;
 			break;
 		}
@@ -71,7 +73,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 
 			char* buffer = fileHandler.getFileContent(move(pathToFile));
-			clientSocket.sendChunkedData(buffer, 10);
+			clientSocket.sendChunkedData(buffer, 1000000);
 			delete[] buffer;
 
 			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;

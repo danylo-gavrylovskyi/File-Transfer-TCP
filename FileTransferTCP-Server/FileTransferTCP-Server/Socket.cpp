@@ -96,6 +96,39 @@ const char* Socket::receiveChunkedData() const {
 	return assembledData;
 }
 
+int Socket::receiveLargeFile(const std::string& pathToFile, const FileHandler& fileHandler) const {
+	int totalSize = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
+		return -1;
+	}
+
+	int chunkSize = 0;
+	bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving chunk size." << std::endl;
+		return -1;
+	}
+
+	int totalReceived = 0;
+
+	while (totalReceived < totalSize) {
+		char* buffer = new char[chunkSize];
+		int bytesReceived = recv(this->clientSocket, buffer, chunkSize, 0);
+
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cerr << "Error in receiving chunked data." << std::endl;
+			break;
+		}
+
+		fileHandler.appendDataToFile(pathToFile, buffer);
+		totalReceived += bytesReceived;
+	}
+
+	return 0;
+}
+
 int Socket::sendChunkedData(const char* data, int chunkSize) const {
 	int dataSize = strlen(data);
 

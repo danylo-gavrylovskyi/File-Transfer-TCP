@@ -57,7 +57,7 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 					splittedPath.push_back(p);
 				}
 
-				listOfFiles += splittedPath[splittedPath.size() - 2] + std::string("");
+				listOfFiles += splittedPath[splittedPath.size() - 2] + std::string(" ");
 
 				splittedPath.clear();
 			}
@@ -68,15 +68,13 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 		}
 		case PUT: {
 			const char* filename = mainSocket.receiveChunkedData();
-			const char* buffer = mainSocket.receiveChunkedData();
-
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
-			fileHandler.createFile(buffer, move(pathToFile));
+
+			mainSocket.receiveLargeFile(move(pathToFile), fileHandler);
 
 			mainSocket.sendResponse("File was uploaded successfully.");
 			std::cout << "File '" << filename << "' was created" << std::endl;
 
-			delete[] buffer;
 			delete[] filename;
 			break;
 		}

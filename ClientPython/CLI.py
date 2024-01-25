@@ -46,7 +46,7 @@ class CLI:
                 client_socket.send_chunked_data(filename.encode(), 4)
 
                 buffer = file_handler.get_file_content(path_to_file)
-                client_socket.send_chunked_data(buffer, 1000000) # ???
+                client_socket.send_chunked_data(buffer, 1000000)
 
                 print(client_socket.receive_confirmation_from_server() + "\n")
             elif (cmd == Commands.DELETE_FILE.value):

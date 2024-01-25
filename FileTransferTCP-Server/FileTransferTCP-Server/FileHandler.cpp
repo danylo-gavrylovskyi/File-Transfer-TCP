@@ -55,3 +55,17 @@ char* FileHandler::getFileInfo(std::string&& pathToFile) const
 
 	return fileInfo;
 }
+
+int FileHandler::appendDataToFile(const std::string& pathToFile, const char* buffer) const
+{
+	std::ofstream file;
+	file.open(pathToFile, std::ios::out | std::ios::app);
+	if (file.fail())
+		throw std::ios_base::failure(std::strerror(errno));
+
+	//make sure write fails with exception if something is wrong
+	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
+
+	file << buffer << std::endl;
+	file.close();
+}

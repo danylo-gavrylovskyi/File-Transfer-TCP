@@ -1,6 +1,5 @@
 import socket
 import struct
-
 class Socket:
     def connect(self, server_ip: str, port: int) -> int:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,7 +23,6 @@ class Socket:
         total_sent = 0
 
         while total_sent < total_size:
-            print(total_sent, total_size)
             current_chunk_size = min(chunk_size, total_size - total_sent)
             chunk_data = data[total_sent:total_sent + current_chunk_size]
             self.client_socket.send(chunk_data)
@@ -35,7 +33,6 @@ class Socket:
     def receive_chunked_data(self):
         total_size: int = struct.unpack("<I", self.client_socket.recv(4))[0]
         chunk_size: int = struct.unpack("<I", self.client_socket.recv(4))[0]
-        print(total_size, chunk_size)
 
         assembled_data = bytearray()
 
