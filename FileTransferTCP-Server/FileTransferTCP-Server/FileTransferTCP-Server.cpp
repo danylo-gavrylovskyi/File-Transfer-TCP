@@ -13,6 +13,8 @@ int main()
 	const int PORT = 12345;
 
 	Socket serverSocket;
+	serverSocket.startUp(PORT);
+
 	FileHandler fileHandler;
 
 	Server server;

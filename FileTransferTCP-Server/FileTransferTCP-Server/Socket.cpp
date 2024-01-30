@@ -2,7 +2,7 @@
 
 Socket::Socket(){}
 
-int Socket::createServerSocket(int port) {
+int Socket::startUp(int port) {
 	// Initialize Winsock
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -12,8 +12,8 @@ int Socket::createServerSocket(int port) {
 	}
 
 	// Server configuration
-	this->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (this->serverSocket == INVALID_SOCKET)
+	this->mainSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->mainSocket == INVALID_SOCKET)
 	{
 		std::cerr << "Error creating socket: " << WSAGetLastError() << std::endl;
 		WSACleanup();
@@ -25,7 +25,7 @@ int Socket::createServerSocket(int port) {
 	serverAddr.sin_port = htons(port);
 
 	// Bind the socket
-	if (bind(this->serverSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR)
+	if (bind(this->mainSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR)
 	{
 		std::cerr << "Bind failed with error: " << WSAGetLastError() << std::endl;
 		this->closeConnection();
@@ -33,7 +33,7 @@ int Socket::createServerSocket(int port) {
 	}
 
 	// Listen for incoming connections
-	if (listen(this->serverSocket, SOMAXCONN) == SOCKET_ERROR)
+	if (listen(this->mainSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		std::cerr << "Listen failed with error: " << WSAGetLastError() << std::endl;
 		this->closeConnection();
@@ -45,7 +45,7 @@ int Socket::createServerSocket(int port) {
 	return 0;
 }
 SOCKET& Socket::acceptConnection() {
-	SOCKET clientSocket = accept(this->serverSocket, nullptr, nullptr);
+	SOCKET clientSocket = accept(this->mainSocket, nullptr, nullptr);
 	if (clientSocket == INVALID_SOCKET)
 	{
 		std::cerr << "Accept failed with error: " << WSAGetLastError() << std::endl;
@@ -55,8 +55,11 @@ SOCKET& Socket::acceptConnection() {
 }
 int Socket::closeConnection() {
 	// Clean up
-	closesocket(this->clientSocket);
-	closesocket(this->serverSocket);
+	closesocket(this->mainSocket);
 	WSACleanup();
 	return 0;
+}
+
+const SOCKET& Socket::getSocket() const {
+	return this->mainSocket;
 }
