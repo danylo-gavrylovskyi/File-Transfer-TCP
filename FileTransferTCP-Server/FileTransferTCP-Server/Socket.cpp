@@ -53,7 +53,6 @@ int Socket::acceptConnection(int port) {
 
 	return 0;
 }
-
 int Socket::closeConnection() {
 	// Clean up
 	closesocket(this->clientSocket);
@@ -62,7 +61,7 @@ int Socket::closeConnection() {
 	return 0;
 }
 
-const char* Socket::receiveChunkedData() const {
+char* Socket::receiveChunkedData() const {
 	int totalSize = 0;
 	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
@@ -95,8 +94,7 @@ const char* Socket::receiveChunkedData() const {
 
 	return assembledData;
 }
-
-int Socket::receiveLargeFile(const std::string& pathToFile, const FileHandler& fileHandler) const {
+int Socket::receiveChunkedDataToFile(const std::string& pathToFile, const FileHandler& fileHandler) const {
 	long long totalSize = 0;
 	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(long long), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
@@ -130,7 +128,7 @@ int Socket::receiveLargeFile(const std::string& pathToFile, const FileHandler& f
 	return 0;
 }
 
-int Socket::sendLargeFile(std::string&& pathToFile, int chunkSize) const {
+int Socket::sendFileUsingChunks(std::string&& pathToFile, int chunkSize) const {
 	std::ifstream isize(pathToFile, std::ifstream::ate | std::ifstream::binary);
 	long long size = isize.tellg();
 
@@ -181,11 +179,9 @@ int Socket::sendLargeFile(std::string&& pathToFile, int chunkSize) const {
 
 	return 0;
 }
-
 int Socket::sendChunkedData(const char* data, int chunkSize) const {
 	int dataSize = strlen(data);
 
-	// Send total size first
 	if (send(this->clientSocket, reinterpret_cast<const char*>(&dataSize), sizeof(int), 0) == SOCKET_ERROR) {
 		std::cerr << "Failed to send total size." << std::endl;
 		return -1;
@@ -213,25 +209,9 @@ int Socket::sendChunkedData(const char* data, int chunkSize) const {
 	return 0;
 }
 
-int Socket::sendResponse(const char* text) const {
-	int textSize = strlen(text);
-	if (send(this->clientSocket, reinterpret_cast<const char*>(&textSize), sizeof(int), 0) == SOCKET_ERROR) {
-		std::cerr << "Failed to send total size." << std::endl;
-		return -1;
-	}
-
-	if (send(this->clientSocket, text, (int)strlen(text), 0) == SOCKET_ERROR) {
-		std::cerr << "Failed to send response to client." << std::endl;
-		return -1;
-	}
-
-	return 0;
-}
-
 const SOCKET& Socket::getServerSocket() const {
 	return this->serverSocket;
 }
-
 const SOCKET& Socket::getClientSocket() const {
 	return this->clientSocket;
 }

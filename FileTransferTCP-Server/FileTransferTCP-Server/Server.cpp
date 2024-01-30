@@ -32,11 +32,9 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 		{
 		case GET: {
 			const char* filename = mainSocket.receiveChunkedData();
-
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
 
-			//mainSocket.sendChunkedData(buffer, 10);
-			mainSocket.sendLargeFile(move(pathToFile), 100000000);
+			mainSocket.sendFileUsingChunks(move(pathToFile), 100000000);
 
 			delete[] filename;
 			break;
@@ -45,15 +43,16 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			std::vector<char*> splittedPath = {};
 			std::string listOfFiles = "";
 			const std::string PATH_TO_FOLDER = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage";
+
 			for (const auto& entry : std::filesystem::directory_iterator(PATH_TO_FOLDER)) {
 				std::filesystem::path outfilename = entry.path();
 				std::string outfilename_str = outfilename.string();
-				char* filename = outfilename_str.data();
+				char* filename = move(outfilename_str).data();
 
-				char* p = strtok(filename, "\\");
-				while (p != NULL) {
-					p = strtok(NULL, "\\");
-					splittedPath.push_back(p);
+				char* partOfPath = strtok(filename, "\\");
+				while (partOfPath != NULL) {
+					partOfPath = strtok(NULL, "\\");
+					splittedPath.push_back(partOfPath);
 				}
 
 				listOfFiles += splittedPath[splittedPath.size() - 2] + std::string(" ");
@@ -69,9 +68,9 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			const char* filename = mainSocket.receiveChunkedData();
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
 
-			mainSocket.receiveLargeFile(move(pathToFile), fileHandler);
+			mainSocket.receiveChunkedDataToFile(move(pathToFile), fileHandler);
 
-			mainSocket.sendResponse("File was uploaded successfully.");
+			mainSocket.sendChunkedData("File was uploaded successfully.", 10);
 			std::cout << "File '" << filename << "' was created" << std::endl;
 
 			delete[] filename;
@@ -79,15 +78,15 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 		}
 		case DELETE_FILE: {
 			const char* filename = mainSocket.receiveChunkedData();
-
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+
 			if (fileHandler.deleteFile(move(pathToFile)) == 0) {
 				std::cout << "File '" << filename << "' was deleted from the server storage." << std::endl;
-				mainSocket.sendResponse("File was successfully deleted from the server storage.");
+				mainSocket.sendChunkedData("File was successfully deleted from the server storage.", 10);
 			}
 			else {
 				std::cout << "Error occured while deleting '" << filename << "' from the server storage." << std::endl;
-				mainSocket.sendResponse("Error when deleting file from the server storage.");
+				mainSocket.sendChunkedData("Error while deleting file from the server storage.", 10);
 			}
 
 			delete[] filename;
@@ -98,7 +97,6 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
 
 			char* fileInfo = fileHandler.getFileInfo(move(pathToFile));
-			std::cout << fileInfo;
 			mainSocket.sendChunkedData(fileInfo, 10);
 
 			delete[] fileInfo;

@@ -10,13 +10,13 @@
 
 int main()
 {
-	const int port = 12345;
+	const int PORT = 12345;
 
 	Socket serverSocket;
 	FileHandler fileHandler;
 
 	Server server;
-	server.start(serverSocket, port, fileHandler);
+	server.start(serverSocket, PORT, fileHandler);
 
 	return 0;
 }
