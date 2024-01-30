@@ -11,14 +11,14 @@
 
 int main()
 {
-	const int port = 12345;
-	PCWSTR const serverIp = L"127.0.0.1";
+	const int PORT = 12345;
+	PCWSTR const SERVER_IP = L"127.0.0.1";
 
 	CLI cli;
 	FileHandler fileHandler;
 
 	Socket clientSocket;
-	clientSocket.connect(serverIp, port);
+	clientSocket.connect(SERVER_IP, PORT);
 	cli.run(clientSocket, fileHandler);
 	clientSocket.disconnect();
 

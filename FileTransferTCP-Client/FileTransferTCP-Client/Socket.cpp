@@ -1,7 +1,5 @@
 #include "Socket.h"
 
-#include <fstream>
-
 Socket::Socket(){}
 
 int Socket::connect(PCWSTR serverIp, int port) {
@@ -37,7 +35,6 @@ int Socket::connect(PCWSTR serverIp, int port) {
 
 	return 0;
 }
-
 int Socket::disconnect() {
 	// Clean up
 	closesocket(this->clientSocket);
@@ -45,47 +42,74 @@ int Socket::disconnect() {
 	return 0;
 }
 
-int Socket::sendIntData(int num) const {
-	if (send(this->clientSocket, reinterpret_cast<const char*>(&num), sizeof(int), 0) == SOCKET_ERROR) {
-		std::cerr << "Failed to send int data." << std::endl;
-		return -1;
+char* Socket::receiveChunkedData() const {
+	int totalSize = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
 	}
 
-	return 0;
-}
-
-int Socket::sendChunkedData(const char* data, int chunkSize) const {
-	int dataSize = strlen(data);
-
-	// Send total size first
-	if (send(this->clientSocket, reinterpret_cast<const char*>(&dataSize), sizeof(int), 0) == SOCKET_ERROR) {
-		std::cerr << "Failed to send total size." << std::endl;
-		return -1;
+	int chunkSize = 0;
+	bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving chunk size." << std::endl;
 	}
 
-	if (send(clientSocket, reinterpret_cast<const char*>(&chunkSize), sizeof(int), 0) == SOCKET_ERROR) {
-		std::cerr << "Failed to send chunk size." << std::endl;
-		return -1;
-	}
+	char* assembledData = new char[totalSize + 1];
+	int totalReceived = 0;
 
-	int totalSent = 0;
+	while (totalReceived < totalSize) {
+		char* buffer = new char[chunkSize];
+		int bytesReceived = recv(this->clientSocket, buffer, sizeof(buffer), 0);
 
-	while (totalSent < dataSize) {
-		int remaining = dataSize - totalSent;
-		int currentChunkSize = (remaining < chunkSize) ? remaining : chunkSize;
-
-		if (send(this->clientSocket, data + totalSent, currentChunkSize, 0) == SOCKET_ERROR) {
-			std::cerr << "Failed to send chunked data." << std::endl;
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cerr << "Error in receiving chunked data." << std::endl;
 			break;
 		}
 
-		totalSent += currentChunkSize;
+		memcpy(assembledData + totalReceived, buffer, bytesReceived);
+		totalReceived += bytesReceived;
+	}
+
+	assembledData[totalReceived] = '\0';
+
+	return assembledData;
+}
+int Socket::receiveChunkedDataToFile(const std::string& pathToFile, const FileHandler& fileHandler) const {
+	long long totalSize = 0;
+	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(long long), 0);
+	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::cerr << "Error in receiving total size." << std::endl;
+		return -1;
+	}
+
+	long long totalReceived = 0;
+	while (totalReceived < totalSize) {
+		long long chunkSize = 0;
+		int chunkBytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(long long), 0);
+		if (chunkBytesReceived == SOCKET_ERROR || chunkBytesReceived == 0) {
+			std::cerr << "Error in receiving chunk size." << std::endl;
+			return -1;
+		}
+
+		std::cout << "Received chunk of size: " << chunkSize << std::endl;
+
+		std::vector<char> buffer(chunkSize + 1, 0);
+		int bytesReceived = recv(this->clientSocket, buffer.data(), chunkSize, 0);
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cerr << "Error in receiving chunked data." << std::endl;
+			return -1;
+		}
+
+		buffer[chunkSize] = '\0';
+		fileHandler.appendDataToFile(pathToFile, buffer.data());
+		totalReceived += bytesReceived;
 	}
 
 	return 0;
 }
 
-int Socket::sendLargeFile(std::string&& pathToFile, int chunkSize) const {
+int Socket::sendFileUsingChunks(std::string&& pathToFile, int chunkSize) const {
 	std::ifstream isize(pathToFile, std::ifstream::ate | std::ifstream::binary);
 	long long size = isize.tellg();
 
@@ -136,91 +160,43 @@ int Socket::sendLargeFile(std::string&& pathToFile, int chunkSize) const {
 
 	return 0;
 }
+int Socket::sendChunkedData(const char* data, int chunkSize) const {
+	int dataSize = strlen(data);
 
-int Socket::receiveLargeFile(const std::string& pathToFile, const FileHandler& fileHandler) const {
-	long long totalSize = 0;
-	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(long long), 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving total size." << std::endl;
+	// Send total size first
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&dataSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send total size." << std::endl;
 		return -1;
 	}
 
-	long long totalReceived = 0;
-	while (totalReceived < totalSize) {
-		long long chunkSize = 0;
-		int chunkBytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(long long), 0);
-		if (chunkBytesReceived == SOCKET_ERROR || chunkBytesReceived == 0) {
-			std::cerr << "Error in receiving chunk size." << std::endl;
-			return -1;
+	if (send(clientSocket, reinterpret_cast<const char*>(&chunkSize), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send chunk size." << std::endl;
+		return -1;
+	}
+
+	int totalSent = 0;
+
+	while (totalSent < dataSize) {
+		int remaining = dataSize - totalSent;
+		int currentChunkSize = (remaining < chunkSize) ? remaining : chunkSize;
+
+		if (send(this->clientSocket, data + totalSent, currentChunkSize, 0) == SOCKET_ERROR) {
+			std::cerr << "Failed to send chunked data." << std::endl;
+			break;
 		}
 
-		std::cout << "Received chunk of size: " << chunkSize << std::endl;
-
-		std::vector<char> buffer(chunkSize + 1, 0);
-		int bytesReceived = recv(this->clientSocket, buffer.data(), chunkSize, 0);
-		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-			std::cerr << "Error in receiving chunked data." << std::endl;
-			return -1;
-		}
-
-		buffer[chunkSize] = '\0';
-		fileHandler.appendDataToFile(pathToFile, buffer.data());
-		totalReceived += bytesReceived;
+		totalSent += currentChunkSize;
 	}
 
 	return 0;
 }
-
-char* Socket::receiveChunkedData() const {
-	int totalSize = 0;
-	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving total size." << std::endl;
+int Socket::sendIntData(int num) const {
+	if (send(this->clientSocket, reinterpret_cast<const char*>(&num), sizeof(int), 0) == SOCKET_ERROR) {
+		std::cerr << "Failed to send int data." << std::endl;
+		return -1;
 	}
 
-	int chunkSize = 0;
-	bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving chunk size." << std::endl;
-	}
-
-	char* assembledData = new char[totalSize + 1];
-	int totalReceived = 0;
-
-	while (totalReceived < totalSize) {
-		char* buffer = new char[chunkSize];
-		int bytesReceived = recv(this->clientSocket, buffer, sizeof(buffer), 0);
-
-		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-			std::cerr << "Error in receiving chunked data." << std::endl;
-			break;
-		}
-
-		memcpy(assembledData + totalReceived, buffer, bytesReceived);
-		totalReceived += bytesReceived;
-	}
-
-	assembledData[totalReceived] = '\0';
-
-	return assembledData;
-}
-
-const char* Socket::receiveConfirmationFromServer() const {
-	int size = 0;
-	int bytesReceived = recv(this->clientSocket, reinterpret_cast<char*>(&size), sizeof(int), 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving total size." << std::endl;
-	}
-
-	char* buffer = new char[size + 1];
-	memset(buffer, 0, size);
-	bytesReceived = recv(this->clientSocket, buffer, size, 0);
-	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving message from server." << std::endl;
-	}
-	buffer[size] = '\0';
-
-	return buffer;
+	return 0;
 }
 
 const SOCKET& Socket::getClientSocket() const {

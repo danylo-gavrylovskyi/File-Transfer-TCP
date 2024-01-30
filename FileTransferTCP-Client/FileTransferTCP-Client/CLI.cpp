@@ -32,7 +32,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to get from the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(filename.c_str(), 2);
+			clientSocket.sendChunkedData(filename.c_str(), 10);
 
 			std::string pathToFolder;
 			std::cout << "Enter path to folder where you want to save requested file: ";
@@ -40,10 +40,9 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 
 			std::string pathToFile = move(pathToFolder) + "/" + filename;
 
-			//const char* requestedFile = clientSocket.receiveChunkedData();
-			clientSocket.receiveLargeFile(move(pathToFile), fileHandler);
-
-			std::cout << "File " << filename << " was created.";
+			if (clientSocket.receiveChunkedDataToFile(move(pathToFile), fileHandler) == 0) {
+				std::cout << "File " << filename << " was created." << std::endl;
+			}
 
 			break;
 		}
@@ -69,11 +68,11 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to be created on the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 
-			clientSocket.sendLargeFile(move(pathToFile), 100000000);
+			clientSocket.sendChunkedData(move(filename).c_str(), 10);
+			clientSocket.sendFileUsingChunks(move(pathToFile), 100000000);
 
-			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;
+			std::cout << clientSocket.receiveChunkedData() << std::endl;
 
 			break;
 		}
@@ -83,7 +82,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::cin >> filename;
 			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 
-			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;
+			std::cout << clientSocket.receiveChunkedData() << std::endl;
 
 			break;
 		}
@@ -96,10 +95,10 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			char* fileInfo = clientSocket.receiveChunkedData();
 			std::vector<char*> splittedFileInfo = {};
 
-			char* p = strtok(fileInfo, ";");
-			while (p != NULL) {
-				splittedFileInfo.push_back(p);
-				p = strtok(NULL, ";");
+			char* fileInfoPart = strtok(fileInfo, ";");
+			while (fileInfoPart != NULL) {
+				splittedFileInfo.push_back(fileInfoPart);
+				fileInfoPart = strtok(NULL, ";");
 			}
 
 			std::cout << "Size       : " << splittedFileInfo[0] << " bytes" << std::endl;
