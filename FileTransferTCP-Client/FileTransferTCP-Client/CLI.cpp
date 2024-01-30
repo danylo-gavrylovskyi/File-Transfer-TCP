@@ -38,14 +38,13 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::cout << "Enter path to folder where you want to save requested file: ";
 			std::cin >> pathToFolder;
 
-			std::string pathToFile = move(pathToFolder) + "/" + move(filename);
+			std::string pathToFile = move(pathToFolder) + "/" + filename;
 
-			const char* requestedFile = clientSocket.receiveChunkedData();
-			fileHandler.createFile(requestedFile, move(pathToFile));
+			//const char* requestedFile = clientSocket.receiveChunkedData();
+			clientSocket.receiveLargeFile(move(pathToFile), fileHandler);
 
 			std::cout << "File " << filename << " was created.";
 
-			delete[] requestedFile;
 			break;
 		}
 		case LIST: {
@@ -72,9 +71,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::cin >> filename;
 			clientSocket.sendChunkedData(move(filename).c_str(), 2);
 
-			char* buffer = fileHandler.getFileContent(move(pathToFile));
-			clientSocket.sendChunkedData(buffer, 1000000);
-			delete[] buffer;
+			clientSocket.sendLargeFile(move(pathToFile), 100000000);
 
 			std::cout << clientSocket.receiveConfirmationFromServer() << std::endl;
 

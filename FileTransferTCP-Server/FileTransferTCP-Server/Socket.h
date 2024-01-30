@@ -14,6 +14,7 @@ public:
 	virtual int closeConnection() = 0;
 	virtual const char* receiveChunkedData() const = 0;
 	virtual int receiveLargeFile(const std::string& pathToFile, const FileHandler& fileHandler) const = 0;
+	virtual int sendLargeFile(std::string&& pathToFile, int chunkSize) const = 0;
 	virtual int sendChunkedData(const char* data, int chunkSize) const = 0;
 	virtual int sendResponse(const char* text) const = 0;
 };
@@ -30,6 +31,7 @@ public:
 	int closeConnection() override;
 	const char* receiveChunkedData() const override;
 	int receiveLargeFile(const std::string& pathToFile, const FileHandler& fileHandler) const override;
+	int sendLargeFile(std::string&& pathToFile, int chunkSize) const override;
 	int sendChunkedData(const char* data, int chunkSize) const override;
 	int sendResponse(const char* text) const override;
 

@@ -23,6 +23,19 @@ char* FileHandler::getFileContent(std::string&& pathToFile) const
 	return buffer;
 }
 
+int FileHandler::appendDataToFile(const std::string& pathToFile, const char* buffer) const
+{
+	std::ofstream file;
+	file.open(pathToFile, std::ios::out | std::ios::app);
+	if (file.fail())
+		throw std::ios_base::failure(std::strerror(errno));
+
+	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
+
+	file << buffer;
+	file.close();
+}
+
 int FileHandler::createFile(const char* buffer, std::string&& pathToFile) const
 {
 	std::ofstream outfile(move(pathToFile));

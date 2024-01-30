@@ -20,7 +20,7 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 		int cmd = 0;
 		int bytesReceived = recv(mainSocket.getClientSocket(), reinterpret_cast<char*>(&cmd), sizeof(int), 0);
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-			std::cerr << "Error in receiving command number." << std::endl;
+			std::cerr << "Error while receiving command number." << std::endl;
 			return;
 		}
 
@@ -34,11 +34,10 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			const char* filename = mainSocket.receiveChunkedData();
 
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
-			char* buffer = fileHandler.getFileContent(move(pathToFile));
 
-			mainSocket.sendChunkedData(buffer, 10);
+			//mainSocket.sendChunkedData(buffer, 10);
+			mainSocket.sendLargeFile(move(pathToFile), 100000000);
 
-			delete[] buffer;
 			delete[] filename;
 			break;
 		}
@@ -99,6 +98,7 @@ void Server::start(Socket& mainSocket, const int port, const FileHandler& fileHa
 			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
 
 			char* fileInfo = fileHandler.getFileInfo(move(pathToFile));
+			std::cout << fileInfo;
 			mainSocket.sendChunkedData(fileInfo, 10);
 
 			delete[] fileInfo;
