@@ -11,7 +11,7 @@ enum CLI::Commands {
 	INFO
 };
 
-void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
+void CLI::run(const SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer)
 {
 	while (true) {
 		int cmd;
@@ -22,7 +22,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 		std::cout << "5. INFO <filename>: Retrieve information about a specific file from the server.\n\t>> ";
 		std::cin >> cmd;
 
-		clientSocket.sendIntData(cmd);
+		dataStreamer.sendIntData(clientSocket, cmd);
 
 		if (cmd == EXIT) break;
 
@@ -32,7 +32,7 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to get from the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(filename.c_str(), 10);
+			dataStreamer.sendChunkedData(clientSocket, filename.c_str(), 10);
 
 			std::string pathToFolder;
 			std::cout << "Enter path to folder where you want to save requested file: ";
@@ -40,14 +40,14 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 
 			std::string pathToFile = move(pathToFolder) + "/" + filename;
 
-			if (clientSocket.receiveChunkedDataToFile(move(pathToFile), fileHandler) == 0) {
+			if (dataStreamer.receiveChunkedDataToFile(clientSocket, move(pathToFile), fileHandler) == 0) {
 				std::cout << "File " << filename << " was created." << std::endl;
 			}
 
 			break;
 		}
 		case LIST: {
-			const char* listOfFiles = clientSocket.receiveChunkedData();
+			const char* listOfFiles = dataStreamer.receiveChunkedData(clientSocket);
 
 			std::cout << "List of files available on the server:" << std::endl;
 			for (char i = 0; i < strlen(listOfFiles); i++)
@@ -69,10 +69,10 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::cout << "Enter filename to be created on the server: ";
 			std::cin >> filename;
 
-			clientSocket.sendChunkedData(move(filename).c_str(), 10);
-			clientSocket.sendFileUsingChunks(move(pathToFile), 100000000);
+			dataStreamer.sendChunkedData(clientSocket, move(filename).c_str(), 10);
+			dataStreamer.sendFileUsingChunks(clientSocket, move(pathToFile), 100000000);
 
-			std::cout << clientSocket.receiveChunkedData() << std::endl;
+			std::cout << dataStreamer.receiveChunkedData(clientSocket) << std::endl;
 
 			break;
 		}
@@ -80,9 +80,9 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to delete from the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+			dataStreamer.sendChunkedData(clientSocket, move(filename).c_str(), 2);
 
-			std::cout << clientSocket.receiveChunkedData() << std::endl;
+			std::cout << dataStreamer.receiveChunkedData(clientSocket) << std::endl;
 
 			break;
 		}
@@ -90,9 +90,9 @@ void CLI::run(Socket& clientSocket, const FileHandler& fileHandler)
 			std::string filename;
 			std::cout << "Enter filename to get info about from the server: ";
 			std::cin >> filename;
-			clientSocket.sendChunkedData(move(filename).c_str(), 2);
+			dataStreamer.sendChunkedData(clientSocket, move(filename).c_str(), 2);
 
-			char* fileInfo = clientSocket.receiveChunkedData();
+			char* fileInfo = dataStreamer.receiveChunkedData(clientSocket);
 			std::vector<char*> splittedFileInfo = {};
 
 			char* fileInfoPart = strtok(fileInfo, ";");

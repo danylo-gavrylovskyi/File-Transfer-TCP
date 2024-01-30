@@ -5,6 +5,7 @@
 #include "Socket.h"
 #include "CLI.h"
 #include "FileHandler.h"
+#include "DataStreamer.h"
 
 // Linking the library needed for network communication
 #pragma comment(lib, "ws2_32.lib")
@@ -16,10 +17,11 @@ int main()
 
 	CLI cli;
 	FileHandler fileHandler;
+	DataStreamer dataStreamer;
 
 	Socket clientSocket;
 	clientSocket.connect(SERVER_IP, PORT);
-	cli.run(clientSocket, fileHandler);
+	cli.run(clientSocket.getClientSocket(), fileHandler, dataStreamer);
 	clientSocket.disconnect();
 
 	return 0;

@@ -6,11 +6,12 @@
 
 #include "Socket.h"
 #include "FileHandler.h"
+#include "DataStreamer.h"
 
 class ICLI {
 public:
 	virtual ~ICLI() {};
-	virtual void run(Socket& clientSocket, const FileHandler& fileHandler) = 0;
+	virtual void run(const SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer) = 0;
 };
 
 class CLI: public ICLI {
@@ -20,5 +21,5 @@ public:
 	CLI(const CLI&) = delete;
 	CLI(CLI&&) = delete;
 
-	void run(Socket& clientSocket, const FileHandler& fileHandler) override;
+	void run(const SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer) override;
 };
