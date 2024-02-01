@@ -4,6 +4,8 @@
 #include <fstream>
 #include <filesystem>
 
+#include <mutex>
+
 #include <string>
 
 class IFileHandler {
@@ -18,6 +20,7 @@ public:
 };
 
 class FileHandler : public IFileHandler {
+	std::mutex mtx;
 public:
 	FileHandler();
 	FileHandler(const FileHandler&) = delete;

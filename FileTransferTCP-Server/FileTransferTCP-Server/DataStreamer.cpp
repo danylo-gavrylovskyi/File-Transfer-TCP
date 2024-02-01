@@ -4,12 +4,14 @@ char* DataStreamer::receiveChunkedData(const SOCKET& clientSocket) const {
 	int totalSize = 0;
 	int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cerr << "Error in receiving total size." << std::endl;
 	}
 
 	int chunkSize = 0;
 	bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(int), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cerr << "Error in receiving chunk size." << std::endl;
 	}
 
@@ -21,6 +23,7 @@ char* DataStreamer::receiveChunkedData(const SOCKET& clientSocket) const {
 		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 			std::cerr << "Error in receiving chunked data." << std::endl;
 			break;
 		}
@@ -37,7 +40,10 @@ int DataStreamer::receiveChunkedDataToFile(const SOCKET& clientSocket, const std
 	long long totalSize = 0;
 	int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(long long), 0);
 	if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-		std::cerr << "Error in receiving total size." << std::endl;
+		{
+			std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+			std::cerr << "Error in receiving total size." << std::endl;
+		}
 		return -1;
 	}
 
@@ -46,16 +52,25 @@ int DataStreamer::receiveChunkedDataToFile(const SOCKET& clientSocket, const std
 		long long chunkSize = 0;
 		int chunkBytesReceived = recv(clientSocket, reinterpret_cast<char*>(&chunkSize), sizeof(long long), 0);
 		if (chunkBytesReceived == SOCKET_ERROR || chunkBytesReceived == 0) {
-			std::cerr << "Error in receiving chunk size." << std::endl;
+			{
+				std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+				std::cerr << "Error in receiving chunk size." << std::endl;
+			}
 			return -1;
 		}
 
-		std::cout << "Received chunk of size: " << chunkSize << std::endl;
+		{
+			std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+			std::cout << "Received chunk of size: " << chunkSize << std::endl;
+		}
 
 		std::vector<char> buffer(chunkSize + 1, 0);
 		int bytesReceived = recv(clientSocket, buffer.data(), chunkSize, 0);
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-			std::cerr << "Error in receiving chunked data." << std::endl;
+			{
+				std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+				std::cerr << "Error in receiving chunked data." << std::endl;
+			}
 			return -1;
 		}
 
@@ -72,7 +87,10 @@ int DataStreamer::sendFileUsingChunks(const SOCKET& clientSocket, std::string&& 
 	long long size = isize.tellg();
 
 	if (send(clientSocket, reinterpret_cast<const char*>(&size), sizeof(long long), 0) == SOCKET_ERROR) {
+		{
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cerr << "Failed to send total size." << std::endl;
+		}
 		return -1;
 	}
 
@@ -90,9 +108,16 @@ int DataStreamer::sendFileUsingChunks(const SOCKET& clientSocket, std::string&& 
 
 			std::vector<char> buffer(currentChunkSize, 0);
 
-			std::cout << "Sent chunk of size: " << currentChunkSize << std::endl;
+			{
+				std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+				std::cout << "Sent chunk of size: " << currentChunkSize << std::endl;
+			}
+
 			if (send(clientSocket, reinterpret_cast<const char*>(&currentChunkSize), sizeof(long long), 0) == SOCKET_ERROR) {
-				std::cerr << "Failed to send chunk size." << std::endl;
+				{
+					std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+					std::cerr << "Failed to send chunk size." << std::endl;
+				}
 				return -1;
 			}
 
@@ -100,7 +125,10 @@ int DataStreamer::sendFileUsingChunks(const SOCKET& clientSocket, std::string&& 
 			std::streamsize s = ((ifile) ? currentChunkSize : ifile.gcount());
 
 			if (send(clientSocket, reinterpret_cast<char*>(buffer.data()), currentChunkSize, 0) == SOCKET_ERROR) {
-				std::cerr << "Failed to send chunked data." << std::endl;
+				{
+					std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+					std::cerr << "Failed to send chunked data." << std::endl;
+				}
 				return -1;
 			}
 			totalSent += currentChunkSize;
@@ -110,7 +138,10 @@ int DataStreamer::sendFileUsingChunks(const SOCKET& clientSocket, std::string&& 
 	}
 	else
 	{
-		std::cerr << "Error while reading the file\n";
+		{
+			std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
+			std::cerr << "Error while reading the file\n";
+		}
 		return -1;
 	}
 

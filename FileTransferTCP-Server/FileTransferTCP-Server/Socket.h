@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <WinSock2.h>
 
+#include <mutex>
+
 #include "FileHandler.h"
 
 class ISocket {
@@ -18,6 +20,7 @@ public:
 
 class Socket: public ISocket {
 	SOCKET mainSocket;
+	std::mutex mtx;
 public:
 	Socket();
 	Socket(const Socket&) = delete;

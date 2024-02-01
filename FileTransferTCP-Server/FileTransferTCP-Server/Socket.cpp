@@ -48,6 +48,7 @@ SOCKET& Socket::acceptConnection() {
 	SOCKET clientSocket = accept(this->mainSocket, nullptr, nullptr);
 	if (clientSocket == INVALID_SOCKET)
 	{
+		std::lock_guard<std::mutex> lock(this->mtx);
 		std::cerr << "Accept failed with error: " << WSAGetLastError() << std::endl;
 	}
 

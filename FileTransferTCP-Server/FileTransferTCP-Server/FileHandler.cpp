@@ -14,6 +14,7 @@ char* FileHandler::getFileInfo(std::string&& pathToFile) const
 	
 	struct stat fInfo;
 	if (stat(move(pathToFile).c_str(), &fInfo) != 0) {
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cerr << "Error: " << strerror(errno) << '\n';
 	}
 
@@ -58,10 +59,12 @@ int FileHandler::createDirectory(const std::string& directory) const
 {
 	try {
 		std::filesystem::create_directory(directory);
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cout << "Folder created successfully." << std::endl;
 		return 0;
 	}
 	catch (const std::filesystem::filesystem_error& e) {
+		std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(this->mtx));
 		std::cerr << "Failed to create folder: " << e.what() << std::endl;
 		return -1;
 	}

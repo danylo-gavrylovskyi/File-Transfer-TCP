@@ -4,6 +4,7 @@
 
 #include <thread>
 #include <vector>
+#include <mutex>
 
 #include "Socket.h"
 #include "FileHandler.h"
@@ -19,6 +20,7 @@ public:
 
 class Server: public IServer {
 	enum Commands;
+	std::mutex mtx;
 public:
 	Server();
 	Server(const Server&) = delete;

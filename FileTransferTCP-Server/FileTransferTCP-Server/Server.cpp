@@ -37,6 +37,7 @@ void Server::handleClient(const SOCKET& clientSocket, const FileHandler& fileHan
 		int cmd = 0;
 		int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&cmd), sizeof(int), 0);
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::lock_guard<std::mutex> lock(this->mtx);
 			std::cerr << "Error while receiving command number." << std::endl;
 			return;
 		}
@@ -87,6 +88,8 @@ void Server::handleClient(const SOCKET& clientSocket, const FileHandler& fileHan
 			dataStreamer.receiveChunkedDataToFile(clientSocket, move(pathToFile), fileHandler);
 
 			dataStreamer.sendChunkedData(clientSocket, "File was uploaded successfully.", 10);
+
+			std::lock_guard<std::mutex> lock(this->mtx);
 			std::cout << "File '" << filename << "' was created" << std::endl;
 
 			delete[] filename;
@@ -97,10 +100,12 @@ void Server::handleClient(const SOCKET& clientSocket, const FileHandler& fileHan
 			std::string pathToFile = PATH_TO_FOLDER + "/" + std::string(filename);
 
 			if (fileHandler.deleteFile(move(pathToFile)) == 0) {
+				std::lock_guard<std::mutex> lock(this->mtx);
 				std::cout << "File '" << filename << "' was deleted from the server storage." << std::endl;
 				dataStreamer.sendChunkedData(clientSocket, "File was successfully deleted from the server storage.", 10);
 			}
 			else {
+				std::lock_guard<std::mutex> lock(this->mtx);
 				std::cout << "Error occured while deleting '" << filename << "' from the server storage." << std::endl;
 				dataStreamer.sendChunkedData(clientSocket, "Error while deleting file from the server storage.", 10);
 			}

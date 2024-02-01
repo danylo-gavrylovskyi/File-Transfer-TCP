@@ -3,6 +3,7 @@
 #include <WinSock2.h>
 
 #include <string>
+#include <mutex>
 
 #include "FileHandler.h"
 
@@ -18,6 +19,7 @@ public:
 };
 
 class DataStreamer: public IDataStreamer {
+	std::mutex mtx;
 public:
 	char* receiveChunkedData(const SOCKET& clientSocket) const override;
 	int receiveChunkedDataToFile(const SOCKET& clientSocket, const std::string& pathToFile, const FileHandler& fileHandler) const override;
