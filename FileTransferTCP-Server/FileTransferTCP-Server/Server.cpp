@@ -18,7 +18,7 @@ void Server::start(Socket& serverSocket, const int port, const FileHandler& file
 	std::vector<std::thread> threads;	while (true) {
 		SOCKET clientSocket = serverSocket.acceptConnection();
 		threads.emplace_back(
-			[this, &clientSocket, &fileHandler, &dataStreamer]() {
+			[this, clientSocket, &fileHandler, &dataStreamer]() {
 				handleClient(clientSocket, fileHandler, dataStreamer);
 			});
 	}	serverSocket.closeConnection();
