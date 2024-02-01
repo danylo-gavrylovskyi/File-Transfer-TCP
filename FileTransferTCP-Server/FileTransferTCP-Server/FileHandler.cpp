@@ -30,11 +30,39 @@ int FileHandler::appendDataToFile(const std::string& pathToFile, const char* buf
 {
 	std::ofstream file;
 	file.open(pathToFile, std::ios::out | std::ios::app);
-	if (file.fail())
+	if (file.fail()) {
 		throw std::ios_base::failure(std::strerror(errno));
+		return -1;
+	}
 
 	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
 
 	file << buffer;
 	file.close();
+	return 0;
+}
+
+int FileHandler::doesDirectoryExist(const std::string& pathToFile) const
+{
+	struct stat sb;
+
+	if (stat(pathToFile.c_str(), &sb) == 0) {
+		return 0;
+	}
+	else {
+		return -1;
+	}
+}
+
+int FileHandler::createDirectory(const std::string& directory) const
+{
+	try {
+		std::filesystem::create_directory(directory);
+		std::cout << "Folder created successfully." << std::endl;
+		return 0;
+	}
+	catch (const std::filesystem::filesystem_error& e) {
+		std::cerr << "Failed to create folder: " << e.what() << std::endl;
+		return -1;
+	}
 }

@@ -27,7 +27,11 @@ void Server::start(Socket& serverSocket, const int port, const FileHandler& file
 	}
 }
 
-void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer) {
+void Server::handleClient(const SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer) {
+	const char* SUBFOLDER = dataStreamer.receiveChunkedData(clientSocket);
+	const std::string PATH_TO_FOLDER = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(SUBFOLDER);
+	if (fileHandler.doesDirectoryExist(SUBFOLDER) == -1) fileHandler.createDirectory(PATH_TO_FOLDER);
+
 	while (true)
 	{
 		int cmd = 0;
@@ -45,7 +49,7 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		{
 		case GET: {
 			const char* filename = dataStreamer.receiveChunkedData(clientSocket);
-			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			std::string pathToFile = PATH_TO_FOLDER + "/" + std::string(filename);
 
 			dataStreamer.sendFileUsingChunks(clientSocket ,move(pathToFile), 100000000);
 
@@ -55,7 +59,6 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		case LIST: {
 			std::vector<char*> splittedPath = {};
 			std::string listOfFiles = "";
-			const std::string PATH_TO_FOLDER = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage";
 
 			for (const auto& entry : std::filesystem::directory_iterator(PATH_TO_FOLDER)) {
 				std::filesystem::path outfilename = entry.path();
@@ -79,7 +82,7 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		}
 		case PUT: {
 			const char* filename = dataStreamer.receiveChunkedData(clientSocket);
-			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			std::string pathToFile = PATH_TO_FOLDER + "/" + std::string(filename);
 
 			dataStreamer.receiveChunkedDataToFile(clientSocket, move(pathToFile), fileHandler);
 
@@ -91,7 +94,7 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		}
 		case DELETE_FILE: {
 			const char* filename = dataStreamer.receiveChunkedData(clientSocket);
-			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			std::string pathToFile = PATH_TO_FOLDER + "/" + std::string(filename);
 
 			if (fileHandler.deleteFile(move(pathToFile)) == 0) {
 				std::cout << "File '" << filename << "' was deleted from the server storage." << std::endl;
@@ -107,7 +110,7 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		}
 		case INFO: {
 			const char* filename = dataStreamer.receiveChunkedData(clientSocket);
-			std::string pathToFile = "C:/Meine/KSE/ClientServer/FileTransferTCP/server_storage/" + std::string(filename);
+			std::string pathToFile = PATH_TO_FOLDER + "/" + std::string(filename);
 
 			char* fileInfo = fileHandler.getFileInfo(move(pathToFile));
 			dataStreamer.sendChunkedData(clientSocket, fileInfo, 10);
@@ -121,5 +124,6 @@ void Server::handleClient(SOCKET& clientSocket, const FileHandler& fileHandler, 
 		}
 	}
 
+	delete[] SUBFOLDER;
 	closesocket(clientSocket);
 }

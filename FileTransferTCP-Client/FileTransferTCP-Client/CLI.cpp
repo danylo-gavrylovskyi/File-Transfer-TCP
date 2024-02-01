@@ -13,6 +13,11 @@ enum CLI::Commands {
 
 void CLI::run(const SOCKET& clientSocket, const FileHandler& fileHandler, const DataStreamer& dataStreamer)
 {
+	std::string subfolder;
+	std::cout << "Enter folder name you want to work with: ";
+	std::cin >> subfolder;
+	dataStreamer.sendChunkedData(clientSocket, move(subfolder).c_str(), 10);
+
 	while (true) {
 		int cmd;
 		std::cout << "\nChoose command:\n\t0. Exit\n\t1. GET <filename>: Request a specific file from the server.\n\t";

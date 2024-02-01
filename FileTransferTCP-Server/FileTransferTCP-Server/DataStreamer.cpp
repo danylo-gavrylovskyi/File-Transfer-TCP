@@ -60,7 +60,7 @@ int DataStreamer::receiveChunkedDataToFile(const SOCKET& clientSocket, const std
 		}
 
 		buffer[chunkSize] = '\0';
-		fileHandler.appendDataToFile(pathToFile, buffer.data());
+		if (fileHandler.appendDataToFile(pathToFile, buffer.data()) == -1) return -1;
 		totalReceived += bytesReceived;
 	}
 
